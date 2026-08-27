@@ -80,7 +80,7 @@ export default function App() {
     <div className="flex h-screen w-screen overflow-hidden bg-surface font-sans text-[#dae2fd]">
       {/* Main Map Area */}
       <div className="relative flex-grow h-full">
-        <MapViewer />
+        <MapViewer geojson={finalResult?.geojson} />
         
         {/* Top Navbar overlay */}
         <div className="absolute top-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
@@ -120,13 +120,13 @@ export default function App() {
       </div>
 
       {/* Execution Trace Sidebar */}
-      <div className="w-[400px] h-full bg-[#060e20] border-l border-white/10 z-20 flex flex-col">
+      <div className="w-[400px] flex-shrink-0 h-full bg-[#060e20] border-l border-white/10 z-20 flex flex-col">
         <div className="p-6 border-b border-white/10">
           <h2 className="text-xl font-bold font-mono tracking-tight text-cyberBlue">Execution Trace</h2>
           <p className="text-sm text-[#87929a] mt-1">Real-time agentic orchestration logs</p>
         </div>
         
-        <div className="flex-grow overflow-y-auto p-6 space-y-6">
+        <div className="flex-grow overflow-y-auto overflow-x-hidden p-6 space-y-6">
           {traceSteps.length === 0 && !isProcessing && (
             <div className="text-center text-[#87929a] mt-10">
               Submit a query to see the agent execute.
@@ -147,9 +147,9 @@ export default function App() {
 
               <div className="bg-[#131b2e] border border-white/5 rounded-md p-3 ml-2">
                 <div className="flex justify-between items-start">
-                  <span className="font-semibold text-[14px] text-[#dae2fd]">{step.step}</span>
+                  <span className="font-semibold text-[14px] text-[#dae2fd] break-words pr-2">{step.step}</span>
                   {step.confidence && (
-                    <span className="text-[10px] bg-[#00a572]/20 text-[#4edea3] px-2 py-0.5 rounded font-mono border border-[#00a572]/30">
+                    <span className="text-[10px] bg-[#00a572]/20 text-[#4edea3] px-2 py-0.5 rounded font-mono border border-[#00a572]/30 whitespace-nowrap">
                       {Math.round(step.confidence * 100)}%
                     </span>
                   )}
@@ -160,10 +160,10 @@ export default function App() {
 
           {/* Final Result Panel */}
           {finalResult && (
-            <div className="mt-8 bg-[#171f33] border border-cyberBlue/30 rounded-lg p-5">
+            <div className="mt-8 bg-[#171f33] border border-cyberBlue/30 rounded-lg p-5 w-full overflow-hidden">
               <div className="text-xs uppercase tracking-widest text-[#87929a] mb-4 font-bold border-b border-white/10 pb-2">Analysis Output</div>
               
-              <div className="prose prose-sm prose-invert max-w-none">
+              <div className="prose prose-sm prose-invert max-w-full overflow-x-auto">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {finalResult.answer}
                 </ReactMarkdown>

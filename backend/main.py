@@ -95,14 +95,30 @@ async def orchestrate_task(query: str):
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are a geospatial AI model expert. The user query is: '{query}'. The intent was {intent_result.get('intent')}. Give a realistic analytical response as if you just processed the satellite imagery. Mention exact coordinates, area sizes in sq km, and confidence levels."
+                    "content": (
+                        f"You are a geospatial AI model expert. The user query is: '{query}'. "
+                        f"The intent was {intent_result.get('intent')}. "
+                        "Give a realistic analytical response as if you just processed the satellite imagery. "
+                        "Mention exact coordinates, area sizes in sq km, and confidence levels.\n\n"
+                        "IMPORTANT: You MUST return your response as a JSON object with two keys:\n"
+                        "1. 'answer': The markdown formatted analytical report.\n"
+                        "2. 'geojson': A valid GeoJSON FeatureCollection containing a Polygon or MultiPolygon highlighting the specific geographic location the user asked about. For example, if they ask about a specific college or river, provide roughly accurate longitude/latitude coordinates for that feature."
+                    )
                 }
             ],
-            temperature=0.3
+            response_format={"type": "json_object"},
+            temperature=0.2
         )
-        ai_text = model_response.choices[0].message.content
+        
+        response_json = json.loads(model_response.choices[0].message.content)
+        ai_text = response_json.get("answer", "Analysis complete.")
+        geojson_data = response_json.get("geojson", {
+            "type": "FeatureCollection",
+            "features": []
+        })
     except Exception as e:
-        ai_text = f"Analysis completed (Fallback). Query '{query}' processed via heuristic routing."
+        ai_text = f"Analysis completed (Fallback). Query '{query}' processed via heuristic routing. Error: {str(e)}"
+        geojson_data = None
 
     yield {
         "event": "trace",
@@ -122,19 +138,7 @@ async def orchestrate_task(query: str):
         "data": json.dumps({
             "answer": ai_text,
             "intent": intent_result,
-            "geojson": {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "properties": {"type": "highlight", "area_sq_km": 4.2},
-                        "geometry": {
-                            "type": "Polygon",
-                            "coordinates": [[[78.96, 20.59], [78.97, 20.59], [78.97, 20.60], [78.96, 20.60], [78.96, 20.59]]]
-                        }
-                    }
-                ]
-            }
+            "geojson": geojson_data
         })
     }
 
