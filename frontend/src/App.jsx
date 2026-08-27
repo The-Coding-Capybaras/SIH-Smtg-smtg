@@ -10,6 +10,7 @@ import html2canvas from 'html2canvas'
 import 'leaflet.heat'
 import parseGeoraster from 'georaster'
 import GeoRasterLayer from 'georaster-layer-for-leaflet'
+import * as turf from '@turf/turf'
 
 // Ensure L is global for Geoman
 window.L = L;
@@ -120,6 +121,14 @@ function GeomanSetup({ onRegionSelected }) {
 
     map.on('pm:create', (e) => {
       const geojson = e.layer.toGeoJSON();
+      
+      try {
+        const area = turf.area(geojson);
+        geojson.areaSqKm = (area / 1000000).toFixed(2);
+      } catch (err) {
+        geojson.areaSqKm = "0.00";
+      }
+
       onRegionSelected(geojson);
       
       // Cleanup on remove
@@ -350,10 +359,14 @@ export default function App() {
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-auto w-[600px] flex flex-col gap-2">
           
           {selectedRegion && (
-            <div className="self-center bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 backdrop-blur-md">
-              <MapIcon size={14} /> Custom bounding box drawn on map
-              <button onClick={() => window.location.reload()} className="hover:text-white transition">
-                <X size={14} />
+            <div className="self-center bg-[#10b981]/20 border border-[#10b981]/40 text-[#10b981] px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-3 backdrop-blur-md shadow-lg">
+              <MapIcon size={14} /> 
+              <span>Custom bounding box drawn</span>
+              <span className="bg-[#10b981]/20 px-2 py-0.5 rounded border border-[#10b981]/30 text-[10px]">
+                Area: {selectedRegion.areaSqKm} km²
+              </span>
+              <button onClick={() => window.location.reload()} className="hover:text-white transition bg-black/20 p-1 rounded-full ml-1">
+                <X size={12} />
               </button>
             </div>
           )}
@@ -362,7 +375,7 @@ export default function App() {
             <Search size={20} className="text-[#87929a] mr-3" />
             <input 
               type="text" 
-              placeholder="Ask SatQuery about regional changes or object detection..." 
+              placeholder="Ask SatQuery about regional changes, object detection, or optical-SAR fusion..." 
               className="bg-transparent flex-grow outline-none text-[#dae2fd] placeholder-[#87929a]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
