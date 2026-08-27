@@ -100,9 +100,11 @@ async def orchestrate_task(query: str):
                         f"The intent was {intent_result.get('intent')}. "
                         "Give a realistic analytical response as if you just processed the satellite imagery. "
                         "Mention exact coordinates, area sizes in sq km, and confidence levels.\n\n"
-                        "IMPORTANT: You MUST return your response as a JSON object with two keys:\n"
+                        "IMPORTANT: You MUST return your response as a JSON object with the following keys:\n"
                         "1. 'answer': The markdown formatted analytical report.\n"
-                        "2. 'geojson': A valid GeoJSON FeatureCollection containing a Polygon or MultiPolygon highlighting the specific geographic location the user asked about. For example, if they ask about a specific college or river, provide roughly accurate longitude/latitude coordinates for that feature."
+                        "2. 'geojson': A valid GeoJSON FeatureCollection containing a Polygon/MultiPolygon of the target. Provide roughly accurate longitude/latitude for the queried location.\n"
+                        "3. 'heatmap': An array of points representing attention or density, e.g. [[lat, lon, intensity], [lat, lon, intensity]]. Generate 5-10 clustered points near the geojson coordinates with intensity 0.0-1.0.\n"
+                        "4. 'is_comparison': boolean. Set to true ONLY if the user is asking about changes over time (e.g. 'what changed', 'before and after', 'deforestation')."
                     )
                 }
             ],
@@ -112,13 +114,14 @@ async def orchestrate_task(query: str):
         
         response_json = json.loads(model_response.choices[0].message.content)
         ai_text = response_json.get("answer", "Analysis complete.")
-        geojson_data = response_json.get("geojson", {
-            "type": "FeatureCollection",
-            "features": []
-        })
+        geojson_data = response_json.get("geojson", {"type": "FeatureCollection", "features": []})
+        heatmap_data = response_json.get("heatmap", [])
+        is_comparison = response_json.get("is_comparison", False)
     except Exception as e:
         ai_text = f"Analysis completed (Fallback). Query '{query}' processed via heuristic routing. Error: {str(e)}"
         geojson_data = None
+        heatmap_data = []
+        is_comparison = False
 
     yield {
         "event": "trace",
@@ -128,7 +131,7 @@ async def orchestrate_task(query: str):
     # Step 4: Synthesizing results
     yield {
         "event": "trace",
-        "data": json.dumps({"step": "Synthesizing Spatial Masks", "status": "processing", "confidence": None})
+        "data": json.dumps({"step": "Synthesizing Spatial Masks & Heatmaps", "status": "processing", "confidence": None})
     }
     await asyncio.sleep(1)
     
@@ -138,7 +141,9 @@ async def orchestrate_task(query: str):
         "data": json.dumps({
             "answer": ai_text,
             "intent": intent_result,
-            "geojson": geojson_data
+            "geojson": geojson_data,
+            "heatmap": heatmap_data,
+            "is_comparison": is_comparison
         })
     }
 
