@@ -394,15 +394,31 @@ export default function App() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       
-      const plainText = finalResult.answer.replace(/[*#_`]/g, '');
-      const splitText = doc.splitTextToSize(plainText, 170);
-      for (let i = 0; i < splitText.length; i++) {
-        if (currentY > 280) {
-          doc.addPage();
-          currentY = 20;
+      let plainText = finalResult.answer
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/#/g, '')
+        .replace(/`/g, '')
+        .replace(/  +/g, ' ')
+        .trim();
+
+      const paragraphs = plainText.split('\n');
+      
+      for (const p of paragraphs) {
+        if (!p.trim()) {
+           currentY += 3;
+           continue;
         }
-        doc.text(splitText[i], 20, currentY);
-        currentY += 5;
+        const splitText = doc.splitTextToSize(p, 170);
+        for (let i = 0; i < splitText.length; i++) {
+          if (currentY > 280) {
+            doc.addPage();
+            currentY = 20;
+          }
+          doc.text(splitText[i], 20, currentY);
+          currentY += 5.5; 
+        }
+        currentY += 2;
       }
 
       doc.save(`ISRO_Report_${Date.now()}.pdf`);
