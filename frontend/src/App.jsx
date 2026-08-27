@@ -19,18 +19,18 @@ import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 
 // [Previous map components: GeoJSONWithZoom, HeatmapLayer, ClippedTileLayer, GeomanSetup, MapViewer] ...
 // I will keep these as they are, but re-inject them correctly.
-function GeoJSONWithZoom({ data }) {
+function GeoJSONWithZoom({ data, disableZoom }) {
   const map = useMap();
   const geoJsonRef = useRef();
 
   useEffect(() => {
-    if (data && geoJsonRef.current) {
+    if (data && geoJsonRef.current && !disableZoom) {
       const bounds = geoJsonRef.current.getBounds();
       if (bounds.isValid()) {
         map.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
       }
     }
-  }, [data, map]);
+  }, [data, map, disableZoom]);
 
   return (
     <GeoJSON 
@@ -244,7 +244,7 @@ function MapViewer({ geojson, heatmap, isComparison, isTimelapse, is3D, clipPerc
         
         <GeomanSetup onRegionSelected={onRegionSelected} />
         {heatmap && heatmap.length > 0 && <HeatmapLayer points={heatmap} />}
-        {geojson && <GeoJSONWithZoom data={geojson} />}
+        {geojson && <GeoJSONWithZoom data={geojson} disableZoom={!!userGeotiff || !!sarGeotiff} />}
         {is3D && <OSMBuildingsLayer />}
         {isTimelapse && <SatLapseLayer />}
       </MapContainer>
@@ -424,7 +424,17 @@ export default function App() {
     let finalQuery = query;
     if (selectedRegion) {
       finalQuery += ` [Target Bounds: ${JSON.stringify(selectedRegion.geometry)}]`;
+    } else if (userGeotiff) {
+      // If no drawn box but a TIFF is loaded, force the LLM to use the TIFF's actual geographic coordinates
+      const bounds = {
+        xmin: userGeotiff.xmin,
+        ymin: userGeotiff.ymin,
+        xmax: userGeotiff.xmax,
+        ymax: userGeotiff.ymax
+      };
+      finalQuery += ` [Target Bounds: ${JSON.stringify(bounds)}]`;
     }
+    
     if (sarGeotiff && userGeotiff) {
       finalQuery += ` [Task: Co-registered Optical-SAR Fusion Analysis Required]`;
     }
