@@ -1,11 +1,36 @@
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer } from 'react-leaflet'
+import { useState, useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Mic, Search, Download } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import L from 'leaflet'
 
-// Simple mock for swipe since leaflet-side-by-side doesn't work well without the actual package and DOM refs
-// We will just render a map for now.
-function MapViewer() {
+// Component to handle auto-zooming to the GeoJSON bounds
+function GeoJSONWithZoom({ data }) {
+  const map = useMap();
+  const geoJsonRef = useRef();
+
+  useEffect(() => {
+    if (data && geoJsonRef.current) {
+      const bounds = geoJsonRef.current.getBounds();
+      if (bounds.isValid()) {
+        map.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
+      }
+    }
+  }, [data, map]);
+
+  return (
+    <GeoJSON 
+      key={JSON.stringify(data)} 
+      data={data} 
+      ref={geoJsonRef}
+      style={{ color: '#10b981', weight: 3, fillColor: '#10b981', fillOpacity: 0.3 }}
+    />
+  );
+}
+
+function MapViewer({ geojson }) {
   return (
     <div className="absolute inset-0 z-0">
       <MapContainer center={[20.5937, 78.9629]} zoom={5} zoomControl={false} style={{ height: '100%', width: '100%', background: '#0b1326' }}>
@@ -13,6 +38,7 @@ function MapViewer() {
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution="Esri"
         />
+        {geojson && <GeoJSONWithZoom data={geojson} />}
       </MapContainer>
     </div>
   )
@@ -134,11 +160,17 @@ export default function App() {
 
           {/* Final Result Panel */}
           {finalResult && (
-            <div className="mt-8 bg-[#171f33] border border-cyberBlue/30 rounded-lg p-4">
-              <div className="text-xs uppercase tracking-widest text-[#87929a] mb-2 font-bold">Analysis Output</div>
-              <div className="text-sm leading-relaxed whitespace-pre-wrap">{finalResult.answer}</div>
+            <div className="mt-8 bg-[#171f33] border border-cyberBlue/30 rounded-lg p-5">
+              <div className="text-xs uppercase tracking-widest text-[#87929a] mb-4 font-bold border-b border-white/10 pb-2">Analysis Output</div>
+              
+              <div className="prose prose-sm prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {finalResult.answer}
+                </ReactMarkdown>
+              </div>
+
               {finalResult.intent && (
-                <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs">
                   <span className="text-[#87929a]">Classified Intent:</span>
                   <span className="text-cyberBlue font-mono">{finalResult.intent.intent}</span>
                 </div>

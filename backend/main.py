@@ -26,7 +26,7 @@ groq_client = Groq(api_key=os.getenv("GROQ_API_KEY", "mock"))
 def determine_intent_with_groq(query: str):
     try:
         response = groq_client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="openai/gpt-oss-120b",
             messages=[
                 {
                     "role": "system",
@@ -91,7 +91,7 @@ async def orchestrate_task(query: str):
     try:
         model_response = await asyncio.to_thread(
             groq_client.chat.completions.create,
-            model="llama3-70b-8192",
+            model="openai/gpt-oss-120b",
             messages=[
                 {
                     "role": "system",

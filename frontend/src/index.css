@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-surface: #0b1326;
@@ -11,4 +12,23 @@
 body {
   background-color: #0b1326;
   color: #dae2fd;
+}
+
+/* Customizations for the typography prose to look good in our dark theme */
+.prose {
+  --tw-prose-body: #bdc8d1;
+  --tw-prose-headings: #dae2fd;
+  --tw-prose-links: #38bdf8;
+  --tw-prose-bold: #dae2fd;
+  --tw-prose-counters: #87929a;
+  --tw-prose-bullets: #87929a;
+  --tw-prose-hr: rgba(255, 255, 255, 0.1);
+  --tw-prose-quotes: #bdc8d1;
+  --tw-prose-quote-borders: #38bdf8;
+  --tw-prose-captions: #87929a;
+  --tw-prose-code: #8ed5ff;
+  --tw-prose-pre-code: #bdc8d1;
+  --tw-prose-pre-bg: #131b2e;
+  --tw-prose-th-borders: rgba(255, 255, 255, 0.1);
+  --tw-prose-td-borders: rgba(255, 255, 255, 0.05);
 }
